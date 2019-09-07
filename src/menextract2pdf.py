@@ -180,6 +180,10 @@ def processpdf(fn, fn_out, annotations):
     outpdf.write(open(fn_out, "wb"))
 
 def mendeley2pdf(fn_db, dir_pdf):
+    if not os.path.isfile(fn_db):
+        sys.stderr.write(f"Database file not found: {fn_db}.\n")
+        return
+
     db = sqlite3.connect(fn_db)
     highlights = get_highlights_from_db(db)
     annotations_all = get_notes_from_db(db, highlights)
