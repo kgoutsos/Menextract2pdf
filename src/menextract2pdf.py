@@ -11,6 +11,7 @@ import PyPDF2
 import warnings
 from dateutil import parser as dtparser
 import sys
+import zlib
 
 global OVERWRITE_PDFS
 OVERWRITE_PDFS = False
@@ -168,6 +169,8 @@ def mendeley2pdf(fn_db, dir_pdf):
     for fn, annons in annotations_all.items():
         try:
             processpdf(fn, os.path.join(dir_pdf, os.path.basename(fn)), annons)
+        except zlib.error:
+            sys.stderr.write(f"zlib error, skipping file: {fn}.\n")
         except PyPDF2.utils.PdfStreamError:
             sys.stderr.write(f"I appear to have run out of things to join together on {fn}.\n")
         except PyPDF2.utils.PdfReadError:

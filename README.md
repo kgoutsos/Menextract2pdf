@@ -32,6 +32,12 @@ overwriting use the ```--overwrite``` flag.
 
 The software is tested on Linux, but should run on Windows or Mac as well.
 
+## Known issues
+
+### "zlib error, skipping file"
+This is due to "corrupted" PDF files. A workaround would be to use ghostscript to repair the file and try again:
+`gs -o repaired.pdf -dQUIET -sDEVICE=pdfwrite damaged.pdf`
+
 ## Versions
 
 * 0.1 first release
