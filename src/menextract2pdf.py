@@ -10,6 +10,7 @@ import pdfannotation
 import PyPDF2
 import warnings
 from dateutil import parser as dtparser
+import sys
 
 global OVERWRITE_PDFS
 OVERWRITE_PDFS = False
@@ -146,18 +147,18 @@ def processpdf(fn, fn_out, annotations):
             inpdf._override_encryption = True
             inpdf._flatten()
     except IOError:
-        print("Could not find pdffile %s"%fn)
+        sys.stderr.write(f"Could not find pdffile {fn}\n.")
         return
     outpdf = PyPDF2.PdfFileWriter()
     outpdf = add_annotation2pdf(inpdf, outpdf, annotations)
     if os.path.isfile(fn_out):
         if not OVERWRITE_PDFS:
-            print("%s exists skipping"%fn_out)
+            print(f"{fn_out} exists skipping.")
             return
         else:
-            print("overwriting %s"%fn_out)
+            print(f"overwriting {fn_out}")
     else:
-        print("writing pdf to %s"%fn_out)
+        print(f"writing pdf to {fn_out}")
     outpdf.write(open(fn_out, "wb"))
 
 def mendeley2pdf(fn_db, dir_pdf):
@@ -168,11 +169,10 @@ def mendeley2pdf(fn_db, dir_pdf):
         try:
             processpdf(fn, os.path.join(dir_pdf, os.path.basename(fn)), annons)
         except PyPDF2.utils.PdfStreamError:
-            print("I appear to have run out of things to join together on %s."%fn)
-            pass
+            sys.stderr.write(f"I appear to have run out of things to join together on {fn}.\n")
         except PyPDF2.utils.PdfReadError:
-            print("I appear to have run out of things to read on %s."%fn)
-            pass
+            sys.stderr.write(f"I appear to have run out of things to read on {fn}.\n")
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
