@@ -23,6 +23,11 @@ def converturl2abspath(url):
     """Convert a url string to an absolute path"""
     return os.path.abspath(unquote(urlparse(url).path))
 
+def get_document_title_from_db(db, file_hash):
+    query = "SELECT Documents.title from Documents where Documents.id in (SELECT DocumentFiles.documentId from DocumentFiles where DocumentFiles.hash == ?)"
+    results = db.execute(query, (file_hash,)).fetchall()
+    return results[0][0] if len(results) == 1 else None
+
 def get_highlights_from_db(db, results={}):
     """Extract the locations of highlights from the Mendeley database
     and put results into dictionary.
@@ -42,7 +47,8 @@ def get_highlights_from_db(db, results={}):
     query = """SELECT Files.localUrl, FileHighlightRects.page,
                             FileHighlightRects.x1, FileHighlightRects.y1,
                             FileHighlightRects.x2, FileHighlightRects.y2,
-                            FileHighlights.createdTime, FileHighlights.color
+                            FileHighlights.createdTime, FileHighlights.color,
+                            Files.hash
                     FROM Files
                     LEFT JOIN FileHighlights
                         ON FileHighlights.fileHash=Files.hash
@@ -51,7 +57,12 @@ def get_highlights_from_db(db, results={}):
                     WHERE (FileHighlightRects.page IS NOT NULL)"""
     ret = db.execute(query)
     for r in ret:
-        pth = converturl2abspath(r[0])
+        if r[0] != "":
+            pth = converturl2abspath(r[0])
+        else:
+            pth = get_document_title_from_db(db, r[8])
+            results[pth] = None
+            continue
         pg = r[1]
         bbox = [[r[2], r[3], r[4], r[5]]]
         cdate = convert2datetime(r[6])
@@ -88,14 +99,20 @@ def get_notes_from_db(db, results={}):
     query = """SELECT Files.localUrl, FileNotes.page,
                             FileNotes.x, FileNotes.y,
                             FileNotes.author, FileNotes.note,
-                            FileNotes.modifiedTime, FileNotes.color
+                            FileNotes.modifiedTime, FileNotes.color,
+                            Files.hash
                     FROM Files
                     LEFT JOIN FileNotes
                         ON FileNotes.fileHash=Files.hash
                     WHERE FileNotes.page IS NOT NULL"""
     ret = db.execute(query)
     for r in ret:
-        pth = converturl2abspath(r[0])
+        if r[0] != "":
+            pth = converturl2abspath(r[0])
+        else:
+            pth = get_document_title_from_db(db, r[8])
+            results[pth] = None
+            continue
         pg = r[1]
         bbox = [r[2], r[3], r[2]+30, r[3]+30] # needs a rectangle however size does not matter
         author = r[4]
@@ -167,6 +184,9 @@ def mendeley2pdf(fn_db, dir_pdf):
     highlights = get_highlights_from_db(db)
     annotations_all = get_notes_from_db(db, highlights)
     for fn, annons in annotations_all.items():
+        if annons is None:
+            sys.stderr.write(f"Empty URL found for document \"{fn}\".\n")
+            continue
         try:
             processpdf(fn, os.path.join(dir_pdf, os.path.basename(fn)), annons)
         except zlib.error:
