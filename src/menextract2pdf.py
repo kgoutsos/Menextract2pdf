@@ -3,13 +3,8 @@
 # This file is distributed under the terms of the
 # GPLv3 licence. See the COPYING file for details
 
-from __future__ import print_function
 import sqlite3
-try:
-    from urllib.parse import unquote, urlparse
-except:
-    from urlparse import urlparse
-    from urllib import unquote
+from urllib.parse import unquote, urlparse
 import os
 import pdfannotation
 import PyPDF2
@@ -24,11 +19,7 @@ def convert2datetime(s):
 
 def converturl2abspath(url):
     """Convert a url string to an absolute path"""
-    try:
-        pth = unquote(urlparse(url).path) #this is necessary for filenames with unicode strings
-    except:
-        pth = unquote(str(urlparse(url).path)).decode("utf8") #this is necessary for filenames with unicode strings
-    return os.path.abspath(pth)
+    return os.path.abspath(unquote(urlparse(url).path))
 
 def get_highlights_from_db(db, results={}):
     """Extract the locations of highlights from the Mendeley database
